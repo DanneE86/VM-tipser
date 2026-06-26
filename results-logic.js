@@ -351,26 +351,14 @@
       if (result?.loser) eliminated.add(toSwedishTeam(result.loser));
     }
 
-    const r32Teams = new Set();
-    for (const match of matches.filter((m) => m.round === "Round of 32")) {
-      for (const raw of [match.team1, match.team2]) {
-        if (!isPlaceholderTeam(raw)) r32Teams.add(toSwedishTeam(raw));
-        const resolved = resolveToken(raw, matchByNum, standings, new Map());
-        if (!isPlaceholderTeam(resolved)) r32Teams.add(toSwedishTeam(resolved));
-      }
-    }
-
     for (const [group, teams] of Object.entries(standings)) {
       const groupMatches = matches.filter((m) => m.group === group);
       if (groupMatches.filter((m) => parseScore(m)).length < 6) continue;
 
-      const groupInR32 = teams.some((row) => r32Teams.has(toSwedishTeam(row.team)));
-
-      teams.forEach((row, rank) => {
-        const sv = toSwedishTeam(row.team);
-        if (rank === 3) eliminated.add(sv);
-        if (groupInR32 && !r32Teams.has(sv)) eliminated.add(sv);
-      });
+      // Endast sistaplatsen i en avslutad grupp är definitivt utslagen.
+      // Lag på 2:a–3:e plats kan fortfarande gå vidare (t.ex. bästa treor).
+      const fourthPlace = teams[3];
+      if (fourthPlace) eliminated.add(toSwedishTeam(fourthPlace.team));
     }
 
     return [...eliminated];
