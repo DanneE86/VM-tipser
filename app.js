@@ -364,7 +364,13 @@ function compareParticipants(a, b, results) {
 
   if (a.championCorrect !== b.championCorrect) return b.championCorrect - a.championCorrect;
 
-  return b.top8Hits - a.top8Hits;
+  if (b.top8Hits !== a.top8Hits) return b.top8Hits - a.top8Hits;
+
+  const aRemaining = a.teamsRemaining ?? 0;
+  const bRemaining = b.teamsRemaining ?? 0;
+  if (bRemaining !== aRemaining) return bRemaining - aRemaining;
+
+  return a.name.localeCompare(b.name, "sv");
 }
 
 function allTeams() {
@@ -437,16 +443,18 @@ function countTeamsRemaining(participant, eliminatedSet, activeSet) {
   return { total: teams.size, remaining };
 }
 
-function buildParticipantOverviewHtml(scored, eliminatedSet, activeSet) {
+function buildParticipantOverviewHtml(scored) {
   if (!scored.length) {
     return `<p class="rules-loading">Inga deltagare hittades.</p>`;
   }
 
   return scored
     .map((p, i) => {
-      const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
+      const isLeader = i === 0;
+      const remaining = p.teamsRemaining ?? 0;
+      const total = p.teamsTotal ?? 8;
       return `
-        <div class="rules-standing-row">
+        <div class="rules-standing-row${isLeader ? " leader" : ""}">
           <div class="rules-standing-left">
             <span class="rules-standing-rank">${i + 1}</span>
             <span class="rules-standing-name">${p.name}</span>
@@ -461,8 +469,8 @@ function buildParticipantOverviewHtml(scored, eliminatedSet, activeSet) {
     .join("");
 }
 
-function renderParticipantOverview(scored, eliminatedSet, activeSet) {
-  const html = buildParticipantOverviewHtml(scored, eliminatedSet, activeSet);
+function renderParticipantOverview(scored) {
+  const html = buildParticipantOverviewHtml(scored);
   ["participant-overview", "rules-standings"].forEach((id) => {
     const element = document.getElementById(id);
     if (element) element.innerHTML = html;
@@ -484,32 +492,41 @@ function render() {
   document.getElementById("pot-amount").textContent = `${PARTICIPANTS.length * STAKE} kr`;
   document.getElementById("pot-meta").textContent = `${PARTICIPANTS.length} deltagare`;
 
-  const scored = PARTICIPANTS.map((p) => ({
-    ...p,
-    ...scoreParticipant(p, results),
-  })).sort((a, b) => compareParticipants(a, b, results));
+  const scored = PARTICIPANTS.map((p) => {
+    const stats = scoreParticipant(p, results);
+    const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
+    return {
+      ...p,
+      ...stats,
+      teamsRemaining: remaining,
+      teamsTotal: total,
+    };
+  }).sort((a, b) => compareParticipants(a, b, results));
 
   const leader = scored[0];
-  const leaderNote = hasTop8 && leader.points > 0
-    ? `Ledare: ${leader.name} med ${formatPoints(leader.points)}`
-    : hasScorer
-      ? "Poäng räknas när slutspelsplatserna fylls i"
-      : "Väntar på resultat från turneringen";
+  const leaderNote =
+    leader.points > 0
+      ? `Ledare: ${leader.name} med ${formatPoints(leader.points)}`
+      : leader.teamsRemaining < leader.teamsTotal
+        ? `Ledare: ${leader.name} (${leader.teamsRemaining} av ${leader.teamsTotal} lag kvar)`
+        : hasScorer
+          ? "Poäng räknas när slutspelsplatserna fylls i"
+          : "Väntar på resultat från turneringen";
 
   const leaderboard = document.getElementById("leaderboard-list");
   leaderboard.innerHTML = `
     <p class="leader-note">${leaderNote}</p>
     ${scored
     .map((p, i) => {
-      const isLeader = hasTop8 && i === 0 && p.points > 0;
-      const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
+      const isLeader = i === 0;
+      const remaining = p.teamsRemaining;
       const chips = p.breakdown
         .filter((b) => b.points > 0)
         .map((b) => `<span class="point-chip">${b.label}</span>`)
         .join("");
 
       const tieMeta = [
-        `${remaining} av ${total} lag kvar`,
+        `${remaining} av ${p.teamsTotal} lag kvar`,
         hasTop8 ? `${p.top8Hits} lag i topp 8` : null,
         p.scorerCorrect ? "rätt skytteliga" : null,
         p.championCorrect ? "rätt VM-vinnare" : null,
@@ -535,7 +552,7 @@ function render() {
     .join("")}
   `;
 
-  renderParticipantOverview(scored, eliminatedSet, activeSet);
+  renderParticipantOverview(scored);
 
   const tipsGrid = document.getElementById("tips-grid");
   tipsGrid.innerHTML = scored

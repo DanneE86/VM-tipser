@@ -610,6 +610,14 @@ h1 {
   padding-top: 0.35rem;
 }
 
+.rules-standing-row.leader {
+  background: rgba(232, 196, 104, 0.05);
+}
+
+.rules-standing-row.leader .rules-standing-name {
+  color: var(--gold);
+}
+
 .rules-standing-left,
 .rules-standing-right {
   display: flex;
