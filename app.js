@@ -422,6 +422,25 @@ function renderTeamTag(team, points, eliminatedSet, activeSet, position, options
   return `<span class="${cls}">${liveIcon}${posHtml}<span class="team-tag-name">${team}</span>${ptsHtml}</span>`;
 }
 
+function countTeamsRemaining(participant, eliminatedSet, activeSet) {
+  const hasSyncData = activeSet.size > 0 || eliminatedSet.size > 0;
+  const teams = new Set();
+
+  [...participant.top4, ...participant.quarter].forEach((team) => {
+    const normalized = normalizeTeam(team);
+    if (normalized) teams.add(normalized);
+  });
+
+  let remaining = 0;
+  for (const team of teams) {
+    const isEliminated = eliminatedSet.has(team);
+    const isStillIn = !isEliminated && (activeSet.has(team) || !hasSyncData);
+    if (isStillIn) remaining++;
+  }
+
+  return { total: teams.size, remaining };
+}
+
 function formatPoints(points) {
   return `${points} p`;
 }
@@ -485,6 +504,23 @@ function render() {
     })
     .join("")}
   `;
+
+  const rulesStandings = document.getElementById("rules-standings");
+  if (rulesStandings) {
+    rulesStandings.innerHTML = scored
+      .map((p, i) => {
+        const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
+        return `
+          <div class="rules-standing-row">
+            <span class="rules-standing-rank">${i + 1}</span>
+            <span class="rules-standing-name">${p.name}</span>
+            <span class="rules-standing-teams">${remaining}/${total} lag kvar</span>
+            <span class="rules-standing-points">${p.points} p</span>
+          </div>
+        `;
+      })
+      .join("");
+  }
 
   const tipsGrid = document.getElementById("tips-grid");
   tipsGrid.innerHTML = scored

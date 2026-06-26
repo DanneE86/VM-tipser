@@ -566,6 +566,52 @@ h1 {
   font-weight: 600;
 }
 
+.rules-standings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rules-standing-row {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.55rem 0.65rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+
+.rules-standing-rank {
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.rules-standing-row:nth-child(1) .rules-standing-rank { color: var(--gold); }
+.rules-standing-row:nth-child(2) .rules-standing-rank { color: var(--silver); }
+.rules-standing-row:nth-child(3) .rules-standing-rank { color: var(--bronze); }
+
+.rules-standing-name {
+  font-weight: 600;
+}
+
+.rules-standing-teams {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.rules-standing-points {
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
 /* Admin */
 .admin-grid {
   display: grid;
