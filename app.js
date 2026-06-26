@@ -441,6 +441,38 @@ function countTeamsRemaining(participant, eliminatedSet, activeSet) {
   return { total: teams.size, remaining };
 }
 
+function buildParticipantOverviewHtml(scored, eliminatedSet, activeSet) {
+  if (!scored.length) {
+    return `<p class="rules-loading">Inga deltagare hittades.</p>`;
+  }
+
+  return scored
+    .map((p, i) => {
+      const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
+      return `
+        <div class="rules-standing-row">
+          <div class="rules-standing-left">
+            <span class="rules-standing-rank">${i + 1}</span>
+            <span class="rules-standing-name">${p.name}</span>
+          </div>
+          <div class="rules-standing-right">
+            <span class="rules-standing-teams">${remaining} av ${total} lag kvar</span>
+            <span class="rules-standing-points">${p.points} poäng</span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderParticipantOverview(scored, eliminatedSet, activeSet) {
+  const html = buildParticipantOverviewHtml(scored, eliminatedSet, activeSet);
+  ["participant-overview", "rules-standings"].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.innerHTML = html;
+  });
+}
+
 function formatPoints(points) {
   return `${points} p`;
 }
@@ -474,12 +506,14 @@ function render() {
     ${scored
     .map((p, i) => {
       const isLeader = hasTop8 && i === 0 && p.points > 0;
+      const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
       const chips = p.breakdown
         .filter((b) => b.points > 0)
         .map((b) => `<span class="point-chip">${b.label}</span>`)
         .join("");
 
       const tieMeta = [
+        `${remaining} av ${total} lag kvar`,
         hasTop8 ? `${p.top8Hits} lag i topp 8` : null,
         p.scorerCorrect ? "rätt skytteliga" : null,
         p.championCorrect ? "rätt VM-vinnare" : null,
@@ -505,22 +539,7 @@ function render() {
     .join("")}
   `;
 
-  const rulesStandings = document.getElementById("rules-standings");
-  if (rulesStandings) {
-    rulesStandings.innerHTML = scored
-      .map((p, i) => {
-        const { remaining, total } = countTeamsRemaining(p, eliminatedSet, activeSet);
-        return `
-          <div class="rules-standing-row">
-            <span class="rules-standing-rank">${i + 1}</span>
-            <span class="rules-standing-name">${p.name}</span>
-            <span class="rules-standing-teams">${remaining}/${total} lag kvar</span>
-            <span class="rules-standing-points">${p.points} p</span>
-          </div>
-        `;
-      })
-      .join("");
-  }
+  renderParticipantOverview(scored, eliminatedSet, activeSet);
 
   const tipsGrid = document.getElementById("tips-grid");
   tipsGrid.innerHTML = scored

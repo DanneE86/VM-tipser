@@ -40,6 +40,16 @@
         <div class="leaderboard" id="leaderboard-list"></div>
       </section>
 
+      <section class="panel overview-panel">
+        <div class="panel-head">
+          <h2>Översikt</h2>
+          <p class="panel-desc">Poäng och antal lag kvar per person</p>
+        </div>
+        <div class="rules-standings" id="participant-overview">
+          <p class="rules-loading">Laddar översikt…</p>
+        </div>
+      </section>
+
       <div class="grid-two">
         <section class="panel">
           <div class="panel-head">
@@ -59,6 +69,12 @@
             <h2>Regler</h2>
           </div>
           <div class="rules">
+            <div class="rule-block rule-block--overview">
+              <h3>Snabböversikt</h3>
+              <div class="rules-standings" id="rules-standings">
+                <p class="rules-loading">Laddar…</p>
+              </div>
+            </div>
             <div class="rule-block">
               <h3>Poäng</h3>
               <ul>
@@ -79,10 +95,6 @@
                 <li>Rätt världsmästare</li>
                 <li>Flest lag i topp 8</li>
               </ol>
-            </div>
-            <div class="rule-block">
-              <h3>Översikt</h3>
-              <div class="rules-standings" id="rules-standings"></div>
             </div>
           </div>
         </section>
@@ -139,7 +151,7 @@
   <datalist id="team-list"></datalist>
   <datalist id="player-list"></datalist>
 
-  <script src="results-logic.js"></script>
-  <script src="app.js"></script>
+  <script src="results-logic.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
