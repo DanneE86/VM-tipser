@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VM-Tipset 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Världsmästerskapet 2026</p>
+        <h1>VM-Tipset</h1>
+        <p class="hero-sub">Topp 4 + kvartsfinalister · 100 kr per person · vinnaren tar allt</p>
+        <div class="hero-meta">
+          <div class="pot">
+            <span class="pot-label">Pott</span>
+            <span class="pot-value" id="pot-amount">800 kr</span>
+            <span class="pot-meta" id="pot-meta">8 deltagare</span>
+          </div>
+          <div class="sync-status" id="sync-status">
+            <span class="sync-dot" id="sync-dot"></span>
+            <span id="sync-text">Hämtar resultat…</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel leaderboard-panel" id="leaderboard">
+        <div class="panel-head">
+          <h2>Ställning</h2>
+          <p class="panel-desc">Varje persons poäng visas här och uppdateras automatiskt.</p>
+        </div>
+        <div class="leaderboard" id="leaderboard-list"></div>
+      </section>
+
+      <div class="grid-two">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Alla tips</h2>
+          </div>
+          <div class="tips-grid" id="tips-grid"></div>
+        </section>
+
+        <section class="panel rules-panel">
+          <div class="panel-head">
+            <h2>Regler</h2>
+          </div>
+          <div class="rules">
+            <div class="rule-block">
+              <h3>Poäng</h3>
+              <ul>
+                <li><strong>1:a plats</strong> — 20 p</li>
+                <li><strong>2:a–3:e plats</strong> — 10 p vardera</li>
+                <li><strong>4:e–8:e plats</strong> — 5 p vardera</li>
+                <li><strong>Fel plats, rätt lag i topp 8</strong> — 5 p</li>
+              </ul>
+            </div>
+            <div class="rule-block">
+              <h3>Format</h3>
+              <p>Gissa placering 1–4 samt fyra övriga lag som når kvartsfinal. För lag 5–8 räcker det att laget går till kvart — placering spelar ingen roll.</p>
+            </div>
+            <div class="rule-block">
+              <h3>Tiebreak (vid lika)</h3>
+              <ol>
+                <li>Rätt skytteligavinnare med flest mål i turneringen</li>
+                <li>Rätt världsmästare</li>
+                <li>Flest lag i topp 8</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel admin-panel">
+        <div class="panel-head">
+          <h2>Uppdatera resultat</h2>
+          <p class="panel-desc">Hämtas automatiskt från turneringsdata. Du kan justera manuellt vid behov.</p>
+        </div>
+
+        <div class="sync-bar">
+          <button type="button" class="btn btn-primary" id="sync-now">Hämta senaste</button>
+          <label class="sync-toggle">
+            <input type="checkbox" id="auto-sync" checked>
+            Automatisk uppdatering var 5:e minut
+          </label>
+        </div>
+
+        <div class="admin-grid">
+          <div class="admin-block">
+            <h3>Topp 8 (slutlig placering)</h3>
+            <div class="result-slots" id="result-slots"></div>
+          </div>
+
+          <div class="admin-block">
+            <h3>Övrigt</h3>
+            <label class="field">
+              <span>Skytteligavinnare</span>
+              <input type="text" id="top-scorer" placeholder="t.ex. Kylian Mbappé" list="player-list">
+            </label>
+            <label class="field">
+              <span>Antal mål (tiebreak)</span>
+              <input type="number" id="top-scorer-goals" min="0" placeholder="0">
+            </label>
+            <label class="field">
+              <span>Världsmästare</span>
+              <input type="text" id="champion" placeholder="t.ex. Spanien" list="team-list">
+            </label>
+          </div>
+        </div>
+
+        <div class="admin-actions">
+          <button type="button" class="btn btn-ghost" id="reset-results">Återställ resultat</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>VM-Tipset · Data från openfootball/worldcup.json · Uppdateras automatiskt under turneringen</p>
+    </footer>
+  </div>
+
+  <datalist id="team-list"></datalist>
+  <datalist id="player-list"></datalist>
+
+  <script src="app.js"></script>
+</body>
+</html>
