@@ -139,6 +139,7 @@ function loadResults() {
       topScorerGoals: data.topScorerGoals ?? "",
       champion: data.champion || "",
       eliminatedTeams: data.eliminatedTeams || [],
+      activeTeams: data.activeTeams || [],
     };
   } catch {
     return defaultResults();
@@ -152,6 +153,7 @@ function defaultResults() {
     topScorerGoals: "",
     champion: "",
     eliminatedTeams: [],
+    activeTeams: [],
   };
 }
 
@@ -190,6 +192,7 @@ function applyFetchedResults(data) {
     topScorerGoals: data.topScorerGoals ?? current.topScorerGoals ?? "",
     champion: data.champion || current.champion || "",
     eliminatedTeams: data.eliminatedTeams || current.eliminatedTeams || [],
+    activeTeams: data.activeTeams || current.activeTeams || [],
     lastSyncedAt: data.updatedAt,
     phase: data.phase,
   };
@@ -382,16 +385,24 @@ function getEliminatedSet(results) {
   return new Set((results.eliminatedTeams || []).map((t) => normalizeTeam(t)));
 }
 
-function renderTeamTag(team, points, eliminatedSet, position, options = {}) {
+function getActiveSet(results) {
+  return new Set((results.activeTeams || []).map((t) => normalizeTeam(t)));
+}
+
+function renderTeamTag(team, points, eliminatedSet, activeSet, position, options = {}) {
   const { coveredPoints = 0 } = options;
   const normalized = normalizeTeam(team);
   const effectivePoints = points > 0 ? points : coveredPoints;
   let cls = "team-tag";
+  let liveIcon = "";
 
   if (effectivePoints > 0) {
     cls += " team-tag--scored";
   } else if (eliminatedSet.has(normalized)) {
     cls += " team-tag--out";
+  } else if (activeSet.has(normalized)) {
+    cls += " team-tag--alive";
+    liveIcon = `<span class="team-tag-live" title="Fortfarande kvar i turneringen"></span>`;
   }
 
   const posHtml = position != null ? `<span class="pos">${position + 1}</span>` : "";
@@ -404,7 +415,7 @@ function renderTeamTag(team, points, eliminatedSet, position, options = {}) {
           ? `<span class="team-tag-pts team-tag-pts--zero">0 p</span>`
           : "";
 
-  return `<span class="${cls}">${posHtml}<span class="team-tag-name">${team}</span>${ptsHtml}</span>`;
+  return `<span class="${cls}">${liveIcon}${posHtml}<span class="team-tag-name">${team}</span>${ptsHtml}</span>`;
 }
 
 function formatPoints(points) {
@@ -417,6 +428,7 @@ function render() {
   const hasTop8 = actualTop8.length > 0;
   const hasScorer = Boolean(normalizeScorer(results.topScorer));
   const eliminatedSet = getEliminatedSet(results);
+  const activeSet = getActiveSet(results);
 
   document.getElementById("pot-amount").textContent = `${PARTICIPANTS.length * STAKE} kr`;
   document.getElementById("pot-meta").textContent = `${PARTICIPANTS.length} deltagare`;
@@ -478,13 +490,13 @@ function render() {
     );
 
     const top4Tags = p.top4Slots
-      .map((slot) => renderTeamTag(slot.team, slot.points, eliminatedSet, slot.index))
+      .map((slot) => renderTeamTag(slot.team, slot.points, eliminatedSet, activeSet, slot.index))
       .join("");
 
     const quarterTags = p.quarterSlots
       .map((slot) => {
         const coveredPoints = top4PointsByTeam.get(normalizeTeam(slot.team)) || 0;
-        return renderTeamTag(slot.team, slot.points, eliminatedSet, null, { coveredPoints });
+        return renderTeamTag(slot.team, slot.points, eliminatedSet, activeSet, null, { coveredPoints });
       })
       .join("");
 

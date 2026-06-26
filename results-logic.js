@@ -376,6 +376,19 @@
     return [...eliminated];
   }
 
+  function getActiveTeams(matches) {
+    const all = new Set();
+
+    for (const match of matches) {
+      for (const raw of [match.team1, match.team2]) {
+        if (!isPlaceholderTeam(raw)) all.add(toSwedishTeam(raw));
+      }
+    }
+
+    const eliminated = new Set(getEliminatedTeams(matches));
+    return [...all].filter((team) => !eliminated.has(team));
+  }
+
   async function fetchTournamentResults() {
     const response = await fetch(WC_JSON_URL);
     if (!response.ok) throw new Error(`Kunde inte hämta VM-data (${response.status})`);
@@ -388,6 +401,7 @@
     const phase = getTournamentPhase(matches);
     const filledSlots = top8.filter(Boolean).length;
     const eliminatedTeams = getEliminatedTeams(matches);
+    const activeTeams = getActiveTeams(matches);
 
     return {
       ok: true,
@@ -396,6 +410,7 @@
       topScorer: scorer.name,
       topScorerGoals: scorer.goals,
       eliminatedTeams,
+      activeTeams,
       phase,
       filledSlots,
       updatedAt: new Date().toISOString(),
@@ -407,6 +422,7 @@
     WC_JSON_URL,
     normalizeScorer,
     getEliminatedTeams,
+    getActiveTeams,
     fetchTournamentResults,
   };
 });
