@@ -315,6 +315,67 @@
     return "upcoming";
   }
 
+  function isPlaceholderTeam(team) {
+    if (!team) return true;
+    if (/^[WL]\d+$/.test(team)) return true;
+    if (/^\d[A-L]$/.test(team)) return true;
+    if (team.includes("/")) return true;
+    return false;
+  }
+
+  function getEliminatedTeams(matches) {
+    const eliminated = new Set();
+    const standings = computeGroupStandings(matches);
+    const matchByNum = new Map();
+    for (const m of matches) {
+      if (m.num != null) matchByNum.set(m.num, m);
+    }
+
+    const koRounds = new Set([
+      "Round of 32",
+      "Round of 16",
+      "Quarter-final",
+      "Semi-final",
+      "Final",
+      "Match for third place",
+    ]);
+
+    const cache = new Map();
+
+    for (const match of matches) {
+      if (!koRounds.has(match.round) || !parseScore(match)) continue;
+      const t1 = resolveToken(match.team1, matchByNum, standings, cache);
+      const t2 = resolveToken(match.team2, matchByNum, standings, cache);
+      if (isPlaceholderTeam(t1) || isPlaceholderTeam(t2)) continue;
+      const result = winnerLoser(match, t1, t2);
+      if (result?.loser) eliminated.add(toSwedishTeam(result.loser));
+    }
+
+    const r32Teams = new Set();
+    for (const match of matches.filter((m) => m.round === "Round of 32")) {
+      for (const raw of [match.team1, match.team2]) {
+        if (!isPlaceholderTeam(raw)) r32Teams.add(toSwedishTeam(raw));
+        const resolved = resolveToken(raw, matchByNum, standings, new Map());
+        if (!isPlaceholderTeam(resolved)) r32Teams.add(toSwedishTeam(resolved));
+      }
+    }
+
+    for (const [group, teams] of Object.entries(standings)) {
+      const groupMatches = matches.filter((m) => m.group === group);
+      if (groupMatches.filter((m) => parseScore(m)).length < 6) continue;
+
+      const groupInR32 = teams.some((row) => r32Teams.has(toSwedishTeam(row.team)));
+
+      teams.forEach((row, rank) => {
+        const sv = toSwedishTeam(row.team);
+        if (rank === 3) eliminated.add(sv);
+        if (groupInR32 && !r32Teams.has(sv)) eliminated.add(sv);
+      });
+    }
+
+    return [...eliminated];
+  }
+
   async function fetchTournamentResults() {
     const response = await fetch(WC_JSON_URL);
     if (!response.ok) throw new Error(`Kunde inte hämta VM-data (${response.status})`);
@@ -326,6 +387,7 @@
     const scorer = computeTopScorer(matches);
     const phase = getTournamentPhase(matches);
     const filledSlots = top8.filter(Boolean).length;
+    const eliminatedTeams = getEliminatedTeams(matches);
 
     return {
       ok: true,
@@ -333,6 +395,7 @@
       champion: top8[0] || "",
       topScorer: scorer.name,
       topScorerGoals: scorer.goals,
+      eliminatedTeams,
       phase,
       filledSlots,
       updatedAt: new Date().toISOString(),
@@ -343,6 +406,7 @@
   return {
     WC_JSON_URL,
     normalizeScorer,
+    getEliminatedTeams,
     fetchTournamentResults,
   };
 });

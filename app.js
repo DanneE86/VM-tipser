@@ -138,6 +138,7 @@ function loadResults() {
       topScorer: data.topScorer || "",
       topScorerGoals: data.topScorerGoals ?? "",
       champion: data.champion || "",
+      eliminatedTeams: data.eliminatedTeams || [],
     };
   } catch {
     return defaultResults();
@@ -150,6 +151,7 @@ function defaultResults() {
     topScorer: "",
     topScorerGoals: "",
     champion: "",
+    eliminatedTeams: [],
   };
 }
 
@@ -187,6 +189,7 @@ function applyFetchedResults(data) {
     topScorer: data.topScorer || current.topScorer || "",
     topScorerGoals: data.topScorerGoals ?? current.topScorerGoals ?? "",
     champion: data.champion || current.champion || "",
+    eliminatedTeams: data.eliminatedTeams || current.eliminatedTeams || [],
     lastSyncedAt: data.updatedAt,
     phase: data.phase,
   };
@@ -265,29 +268,31 @@ function scoreParticipant(participant, results) {
   const breakdown = [];
   let points = 0;
   const scoredTeams = new Set();
+  const top4Slots = [];
+  const quarterSlots = [];
 
   participant.top4.forEach((team, index) => {
     const predicted = normalizeTeam(team);
     if (!predicted) return;
 
+    let slotPoints = 0;
     const actualIndex = actualNormalized.indexOf(predicted);
+
     if (actualIndex === -1) {
       breakdown.push({ team: predicted, points: 0, label: `${index + 1}: ${predicted}`, type: "miss" });
-      return;
-    }
-
-    if (actualIndex === index) {
-      const pts = pointsForPosition(index);
-      points += pts;
+    } else if (actualIndex === index) {
+      slotPoints = pointsForPosition(index);
+      points += slotPoints;
       scoredTeams.add(predicted);
       breakdown.push({
         team: predicted,
-        points: pts,
-        label: `${index + 1}: ${predicted} (${pts} p)`,
+        points: slotPoints,
+        label: `${index + 1}: ${predicted} (${slotPoints} p)`,
         type: "exact",
       });
     } else {
-      points += 5;
+      slotPoints = 5;
+      points += slotPoints;
       scoredTeams.add(predicted);
       breakdown.push({
         team: predicted,
@@ -296,14 +301,19 @@ function scoreParticipant(participant, results) {
         type: "wrong",
       });
     }
+
+    top4Slots.push({ team, points: slotPoints, index });
   });
 
   participant.quarter.forEach((team) => {
     const predicted = normalizeTeam(team);
-    if (!predicted || scoredTeams.has(predicted)) return;
+    if (!predicted) return;
 
-    if (actualNormalized.includes(predicted)) {
-      points += 5;
+    let slotPoints = 0;
+
+    if (!scoredTeams.has(predicted) && actualNormalized.includes(predicted)) {
+      slotPoints = 5;
+      points += slotPoints;
       scoredTeams.add(predicted);
       breakdown.push({
         team: predicted,
@@ -311,9 +321,11 @@ function scoreParticipant(participant, results) {
         label: `Kvart: ${predicted} (5 p)`,
         type: "quarter",
       });
-    } else {
+    } else if (!scoredTeams.has(predicted)) {
       breakdown.push({ team: predicted, points: 0, label: `Kvart: ${predicted}`, type: "miss" });
     }
+
+    quarterSlots.push({ team, points: slotPoints });
   });
 
   const champion = normalizeTeam(results.champion);
@@ -329,6 +341,8 @@ function scoreParticipant(participant, results) {
   return {
     points,
     breakdown,
+    top4Slots,
+    quarterSlots,
     championCorrect,
     scorerCorrect,
     top8Hits,
@@ -364,17 +378,33 @@ function allScorers() {
   return [...scorers].sort((a, b) => a.localeCompare(b, "sv"));
 }
 
-function teamHitClass(team, slot, actualTop8, type) {
-  if (!actualTop8.length) return "";
-  const predicted = normalizeTeam(team);
-  const actualNormalized = actualTop8.map(normalizeTeam);
-  const idx = actualNormalized.indexOf(predicted);
-  if (idx === -1) return "miss";
+function getEliminatedSet(results) {
+  return new Set((results.eliminatedTeams || []).map((t) => normalizeTeam(t)));
+}
 
-  if (type === "top4" && idx === slot) return "hit-exact";
-  if (type === "top4" && idx !== slot) return "hit-wrong";
-  if (type === "quarter" && idx >= 0) return "hit-exact";
-  return "";
+function renderTeamTag(team, points, eliminatedSet, position, options = {}) {
+  const { coveredPoints = 0 } = options;
+  const normalized = normalizeTeam(team);
+  const effectivePoints = points > 0 ? points : coveredPoints;
+  let cls = "team-tag";
+
+  if (effectivePoints > 0) {
+    cls += " team-tag--scored";
+  } else if (eliminatedSet.has(normalized)) {
+    cls += " team-tag--out";
+  }
+
+  const posHtml = position != null ? `<span class="pos">${position + 1}</span>` : "";
+  const ptsHtml =
+    points > 0
+      ? `<span class="team-tag-pts">+${points} p</span>`
+      : coveredPoints > 0
+        ? `<span class="team-tag-pts">+${coveredPoints} p</span>`
+        : eliminatedSet.has(normalized)
+          ? `<span class="team-tag-pts team-tag-pts--zero">0 p</span>`
+          : "";
+
+  return `<span class="${cls}">${posHtml}<span class="team-tag-name">${team}</span>${ptsHtml}</span>`;
 }
 
 function formatPoints(points) {
@@ -386,6 +416,7 @@ function render() {
   const actualTop8 = getActualTop8(results);
   const hasTop8 = actualTop8.length > 0;
   const hasScorer = Boolean(normalizeScorer(results.topScorer));
+  const eliminatedSet = getEliminatedSet(results);
 
   document.getElementById("pot-amount").textContent = `${PARTICIPANTS.length * STAKE} kr`;
   document.getElementById("pot-meta").textContent = `${PARTICIPANTS.length} deltagare`;
@@ -442,15 +473,19 @@ function render() {
   const tipsGrid = document.getElementById("tips-grid");
   tipsGrid.innerHTML = scored
     .map((p, i) => {
-    const top4Tags = p.top4
-      .map(
-        (t, pos) =>
-          `<span class="team-tag ${teamHitClass(t, pos, actualTop8, "top4")}"><span class="pos">${pos + 1}</span>${t}</span>`
-      )
+    const top4PointsByTeam = new Map(
+      p.top4Slots.map((slot) => [normalizeTeam(slot.team), slot.points])
+    );
+
+    const top4Tags = p.top4Slots
+      .map((slot) => renderTeamTag(slot.team, slot.points, eliminatedSet, slot.index))
       .join("");
 
-    const quarterTags = p.quarter
-      .map((t) => `<span class="team-tag ${teamHitClass(t, -1, actualTop8, "quarter")}">${t}</span>`)
+    const quarterTags = p.quarterSlots
+      .map((slot) => {
+        const coveredPoints = top4PointsByTeam.get(normalizeTeam(slot.team)) || 0;
+        return renderTeamTag(slot.team, slot.points, eliminatedSet, null, { coveredPoints });
+      })
       .join("");
 
     const scorerHit =

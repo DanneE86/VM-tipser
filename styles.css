@@ -406,9 +406,9 @@ h1 {
 .team-tag {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   font-size: 0.82rem;
-  padding: 0.25rem 0.55rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid transparent;
@@ -420,20 +420,42 @@ h1 {
   font-size: 0.75rem;
 }
 
-.team-tag.hit-exact {
-  background: var(--accent-dim);
-  border-color: rgba(62, 207, 142, 0.35);
+.team-tag-name {
+  font-weight: 500;
+}
+
+.team-tag-pts {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(62, 207, 142, 0.2);
   color: var(--accent);
 }
 
-.team-tag.hit-wrong {
-  background: rgba(232, 196, 104, 0.12);
-  border-color: rgba(232, 196, 104, 0.3);
-  color: var(--gold);
+.team-tag--scored {
+  background: var(--accent-dim);
+  border-color: rgba(62, 207, 142, 0.4);
+  color: var(--accent);
 }
 
-.team-tag.miss {
-  opacity: 0.55;
+.team-tag--scored .pos {
+  color: var(--accent);
+}
+
+.team-tag--out {
+  background: rgba(240, 113, 120, 0.1);
+  border-color: rgba(240, 113, 120, 0.28);
+  color: #e8a0a5;
+}
+
+.team-tag--out .pos {
+  color: #c97a80;
+}
+
+.team-tag-pts--zero {
+  background: rgba(240, 113, 120, 0.15);
+  color: #e8a0a5;
 }
 
 .scorer-name {
