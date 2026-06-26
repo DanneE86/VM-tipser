@@ -191,8 +191,8 @@ function applyFetchedResults(data) {
     topScorer: data.topScorer || current.topScorer || "",
     topScorerGoals: data.topScorerGoals ?? current.topScorerGoals ?? "",
     champion: data.champion || current.champion || "",
-    eliminatedTeams: data.eliminatedTeams ?? current.eliminatedTeams ?? [],
-    activeTeams: data.activeTeams ?? current.activeTeams ?? [],
+    eliminatedTeams: Array.isArray(data.eliminatedTeams) ? data.eliminatedTeams : current.eliminatedTeams,
+    activeTeams: Array.isArray(data.activeTeams) ? data.activeTeams : current.activeTeams,
     lastSyncedAt: data.updatedAt,
     phase: data.phase,
   };
@@ -393,9 +393,8 @@ function renderTeamTag(team, points, eliminatedSet, activeSet, position, options
   const { coveredPoints = 0 } = options;
   const normalized = normalizeTeam(team);
   const effectivePoints = points > 0 ? points : coveredPoints;
-  const hasSyncData = activeSet.size > 0 || eliminatedSet.size > 0;
   const isEliminated = eliminatedSet.has(normalized);
-  const isStillIn = !isEliminated && (activeSet.has(normalized) || !hasSyncData);
+  const isStillIn = !isEliminated && activeSet.has(normalized);
 
   let cls = "team-tag";
   let liveIcon = "";
@@ -423,7 +422,6 @@ function renderTeamTag(team, points, eliminatedSet, activeSet, position, options
 }
 
 function countTeamsRemaining(participant, eliminatedSet, activeSet) {
-  const hasSyncData = activeSet.size > 0 || eliminatedSet.size > 0;
   const teams = new Set();
 
   [...participant.top4, ...participant.quarter].forEach((team) => {
@@ -433,9 +431,7 @@ function countTeamsRemaining(participant, eliminatedSet, activeSet) {
 
   let remaining = 0;
   for (const team of teams) {
-    const isEliminated = eliminatedSet.has(team);
-    const isStillIn = !isEliminated && (activeSet.has(team) || !hasSyncData);
-    if (isStillIn) remaining++;
+    if (!eliminatedSet.has(team) && activeSet.has(team)) remaining++;
   }
 
   return { total: teams.size, remaining };
