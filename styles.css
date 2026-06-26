@@ -322,8 +322,38 @@ h1 {
   color: var(--muted);
 }
 
-/* Tips cards */
-.tips-grid {
+.tip-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-scored {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.legend-out {
+  color: #e8a0a5;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(240, 113, 120, 0.12);
+}
+
+.legend-hint {
+  color: var(--muted);
+}
   display: grid;
   gap: 0.75rem;
 }
@@ -459,18 +489,23 @@ h1 {
 }
 
 .team-tag--alive {
-  background: rgba(62, 207, 142, 0.07);
-  border-color: rgba(62, 207, 142, 0.18);
+  background: rgba(62, 207, 142, 0.14);
+  border-color: rgba(62, 207, 142, 0.45);
+  color: #b8f0d4;
+}
+
+.team-tag--alive .pos {
+  color: #7ddea8;
 }
 
 .team-tag-live {
-  width: 7px;
-  height: 7px;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.55;
+  background: #3ecf8e;
   flex-shrink: 0;
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.35);
 }
 
 .scorer-name {

@@ -99,7 +99,7 @@ const TEAM_ALIASES = {
 
 const POSITION_POINTS = [20, 10, 10, 5];
 
-const STORAGE_KEY = "vm-tipset-results-v1";
+const STORAGE_KEY = "vm-tipset-results-v2";
 const AUTO_SYNC_KEY = "vm-tipset-auto-sync";
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -191,8 +191,8 @@ function applyFetchedResults(data) {
     topScorer: data.topScorer || current.topScorer || "",
     topScorerGoals: data.topScorerGoals ?? current.topScorerGoals ?? "",
     champion: data.champion || current.champion || "",
-    eliminatedTeams: data.eliminatedTeams || current.eliminatedTeams || [],
-    activeTeams: data.activeTeams || current.activeTeams || [],
+    eliminatedTeams: data.eliminatedTeams ?? current.eliminatedTeams ?? [],
+    activeTeams: data.activeTeams ?? current.activeTeams ?? [],
     lastSyncedAt: data.updatedAt,
     phase: data.phase,
   };
@@ -393,16 +393,20 @@ function renderTeamTag(team, points, eliminatedSet, activeSet, position, options
   const { coveredPoints = 0 } = options;
   const normalized = normalizeTeam(team);
   const effectivePoints = points > 0 ? points : coveredPoints;
+  const hasSyncData = activeSet.size > 0 || eliminatedSet.size > 0;
+  const isEliminated = eliminatedSet.has(normalized);
+  const isStillIn = !isEliminated && (activeSet.has(normalized) || !hasSyncData);
+
   let cls = "team-tag";
   let liveIcon = "";
 
   if (effectivePoints > 0) {
     cls += " team-tag--scored";
-  } else if (eliminatedSet.has(normalized)) {
+  } else if (isEliminated) {
     cls += " team-tag--out";
-  } else if (activeSet.has(normalized)) {
+  } else if (isStillIn) {
     cls += " team-tag--alive";
-    liveIcon = `<span class="team-tag-live" title="Fortfarande kvar i turneringen"></span>`;
+    liveIcon = `<span class="team-tag-live" title="Fortfarande kvar i turneringen" aria-label="Kvar i turneringen"></span>`;
   }
 
   const posHtml = position != null ? `<span class="pos">${position + 1}</span>` : "";
@@ -411,7 +415,7 @@ function renderTeamTag(team, points, eliminatedSet, activeSet, position, options
       ? `<span class="team-tag-pts">+${points} p</span>`
       : coveredPoints > 0
         ? `<span class="team-tag-pts">+${coveredPoints} p</span>`
-        : eliminatedSet.has(normalized)
+        : isEliminated
           ? `<span class="team-tag-pts team-tag-pts--zero">0 p</span>`
           : "";
 
