@@ -5,7 +5,7 @@ const PARTICIPANTS = [
     name: "William",
     top4: ["Spanien", "Frankrike", "Brasilien", "England"],
     quarter: ["Portugal", "Argentina", "Belgien", "Tyskland"],
-    scorer: "Mbappé",
+    scorer: "Kylian Mbappé",
   },
   {
     name: "Daniel",
@@ -23,13 +23,13 @@ const PARTICIPANTS = [
     name: "Richard",
     top4: ["Frankrike", "Spanien", "Argentina", "England"],
     quarter: ["Portugal", "Tyskland", "Brasilien", "Nederländerna"],
-    scorer: "Mbappé",
+    scorer: "Kylian Mbappé",
   },
   {
     name: "Martin",
     top4: ["Portugal", "Frankrike", "Spanien", "Nederländerna"],
     quarter: ["Japan", "Turkiet", "Mexiko", "Argentina"],
-    scorer: "CR7",
+    scorer: "Cristiano Ronaldo",
   },
   {
     name: "Jonny",
@@ -97,21 +97,6 @@ const TEAM_ALIASES = {
   uruguay: "Uruguay",
 };
 
-const SCORER_ALIASES = {
-  mbappe: "Kylian Mbappé",
-  "mbappé": "Kylian Mbappé",
-  "kylian mbappe": "Kylian Mbappé",
-  "kylian mbappé": "Kylian Mbappé",
-  cr7: "Cristiano Ronaldo",
-  "cristiano ronaldo": "Cristiano Ronaldo",
-  "harry kane": "Harry Kane",
-  kane: "Harry Kane",
-  "erling haaland": "Erling Haaland",
-  haaland: "Erling Haaland",
-  "jordan ayew": "Jordan Ayew",
-  ayew: "Jordan Ayew",
-};
-
 const POSITION_POINTS = [20, 10, 10, 5];
 
 const STORAGE_KEY = "vm-tipset-results-v1";
@@ -136,9 +121,11 @@ function normalizeTeam(value) {
 }
 
 function normalizeScorer(value) {
-  if (!value || !value.trim()) return "";
-  const key = normalizeKey(value);
-  return SCORER_ALIASES[key] || value.trim().replace(/\s+/g, " ");
+  return VmResults.normalizeScorer(value);
+}
+
+function displayScorer(value) {
+  return normalizeScorer(value);
 }
 
 function loadResults() {
@@ -216,12 +203,15 @@ async function fetchLiveResults(force = false) {
   setSyncStatus("loading", "Hämtar resultat…");
 
   try {
-    const endpoint = force ? "/api/refresh" : "/api/results";
-    const response = await fetch(endpoint);
-    const data = await response.json();
+    let data;
 
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || "Kunde inte hämta resultat");
+    try {
+      const endpoint = force ? "/api/refresh" : "/api/results";
+      const response = await fetch(endpoint);
+      data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || "API fel");
+    } catch {
+      data = await VmResults.fetchTournamentResults();
     }
 
     applyFetchedResults(data);
@@ -237,11 +227,7 @@ async function fetchLiveResults(force = false) {
     render();
     return data;
   } catch (error) {
-    const manual = loadResults().lastSyncedAt;
-    const fallback = manual
-      ? "Server ej tillgänglig — kör npm start för automatisk hämtning"
-      : "Öppna via npm start (localhost:8765) för automatisk hämtning";
-    setSyncStatus("error", error.message.includes("fetch") ? fallback : error.message);
+    setSyncStatus("error", error.message || "Kunde inte hämta resultat");
     return null;
   } finally {
     isSyncing = false;
@@ -496,7 +482,7 @@ function render() {
         </div>
         <div class="tip-section">
           <div class="tip-label">Skytteliga</div>
-          <span class="scorer-tag ${scorerHit}">${p.scorer}</span>
+          <p class="scorer-name ${scorerHit}">${displayScorer(p.scorer)}</p>
         </div>
       </article>
     `;
@@ -539,7 +525,7 @@ function render() {
   const topScorerGoals = document.getElementById("top-scorer-goals");
   const champion = document.getElementById("champion");
 
-  if (topScorer !== document.activeElement) topScorer.value = results.topScorer;
+  if (topScorer !== document.activeElement) topScorer.value = displayScorer(results.topScorer);
   if (topScorerGoals !== document.activeElement) topScorerGoals.value = results.topScorerGoals;
   if (champion !== document.activeElement) champion.value = results.champion;
 }
@@ -584,7 +570,22 @@ function bindAdmin() {
   });
 }
 
+function setupPublicLink() {
+  const link = document.getElementById("public-url");
+  if (!link) return;
+
+  const url = window.location.origin + window.location.pathname.replace(/\/$/, "") + "/";
+  const publicUrl =
+    window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+      ? "https://dannee86.github.io/VM-tipser/"
+      : url;
+
+  link.href = publicUrl;
+  link.textContent = publicUrl;
+}
+
 bindAdmin();
 setupAutoSync();
+setupPublicLink();
 render();
 fetchLiveResults(false);

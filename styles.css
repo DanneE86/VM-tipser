@@ -79,6 +79,22 @@ h1 {
   max-width: 36rem;
 }
 
+.share-link {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.share-link a {
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.share-link a:hover {
+  text-decoration: underline;
+}
+
 .hero-meta {
   display: flex;
   flex-wrap: wrap;
@@ -420,14 +436,16 @@ h1 {
   opacity: 0.55;
 }
 
-.scorer-tag {
-  font-size: 0.85rem;
+.scorer-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--text);
 }
 
-.scorer-tag.hit {
+.scorer-name.hit {
   color: var(--accent);
-  font-weight: 600;
 }
 
 /* Rules */
