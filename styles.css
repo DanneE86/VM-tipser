@@ -354,6 +354,9 @@ h1 {
 .legend-hint {
   color: var(--muted);
 }
+
+/* Tips cards */
+.tips-grid {
   display: grid;
   gap: 0.75rem;
 }
