@@ -782,6 +782,93 @@ input:focus {
   cursor: wait;
 }
 
+.bracket-block {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.bracket-block h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.bracket-empty {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.bracket-grid {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding: 1rem 0 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.bracket-round {
+  flex: 0 0 11.5rem;
+  min-width: 11.5rem;
+}
+
+.bracket-round-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.bracket-matches {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.bracket-match {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.65rem;
+}
+
+.bracket-match.played {
+  border-color: rgba(62, 207, 142, 0.25);
+}
+
+.bracket-team {
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.2rem 0;
+  line-height: 1.3;
+}
+
+.bracket-team--winner {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.bracket-team--loser {
+  color: var(--muted);
+  opacity: 0.65;
+  text-decoration: line-through;
+}
+
+.bracket-score {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
 footer {
   text-align: center;
   padding-top: 1rem;

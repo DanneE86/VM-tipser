@@ -128,17 +128,34 @@
     return { home: a, away: b };
   }
 
+  function parsePenalties(match) {
+    const pen = match.score?.pen || match.score?.p;
+    if (!pen || pen.length < 2) return null;
+    return { home: pen[0], away: pen[1] };
+  }
+
   function winnerLoser(match, team1, team2) {
     const score = parseScore(match);
     if (!score) return null;
     if (score.home > score.away) return { winner: team1, loser: team2 };
     if (score.away > score.home) return { winner: team2, loser: team1 };
-    if (match.score?.pen) {
-      const [p1, p2] = match.score.pen;
-      if (p1 > p2) return { winner: team1, loser: team2 };
-      if (p2 > p1) return { winner: team2, loser: team1 };
+    const pen = parsePenalties(match);
+    if (pen) {
+      if (pen.home > pen.away) return { winner: team1, loser: team2 };
+      if (pen.away > pen.home) return { winner: team2, loser: team1 };
     }
     return null;
+  }
+
+  function formatScoreLabel(match) {
+    const score = parseScore(match);
+    if (!score) return "";
+    let label = `${score.home}–${score.away}`;
+    const pen = parsePenalties(match);
+    if (pen && score.home === score.away) {
+      label += ` (${pen.home}–${pen.away} str.)`;
+    }
+    return label;
   }
 
   function computeGroupStandings(matches) {
@@ -377,6 +394,65 @@
     return [...all].filter((team) => !eliminated.has(team));
   }
 
+  const ROUND_LABELS = {
+    "Round of 32": "32-delsfinal",
+    "Round of 16": "Åttondelsfinal",
+    "Quarter-final": "Kvartsfinal",
+    "Semi-final": "Semifinal",
+    Final: "Final",
+    "Match for third place": "Bronsmatch",
+  };
+
+  const KNOCKOUT_ROUNDS = [
+    "Round of 32",
+    "Round of 16",
+    "Quarter-final",
+    "Semi-final",
+    "Match for third place",
+    "Final",
+  ];
+
+  function buildKnockoutBracket(matches) {
+    const standings = computeGroupStandings(matches);
+    const matchByNum = new Map();
+    for (const m of matches) {
+      if (m.num != null) matchByNum.set(m.num, m);
+    }
+
+    return KNOCKOUT_ROUNDS.map((round) => {
+      const roundMatches = matches
+        .filter((m) => m.round === round)
+        .sort((a, b) => (a.num || 0) - (b.num || 0))
+        .map((match) => {
+          const cache = new Map();
+          const t1raw = resolveToken(match.team1, matchByNum, standings, cache);
+          const t2raw = resolveToken(match.team2, matchByNum, standings, cache);
+          const t1 = t1raw ? toSwedishTeam(t1raw) : match.team1;
+          const t2 = t2raw ? toSwedishTeam(t2raw) : match.team2;
+          const result = winnerLoser(match, t1raw || match.team1, t2raw || match.team2);
+          const winner = result ? toSwedishTeam(result.winner) : "";
+          const played = Boolean(parseScore(match));
+
+          return {
+            num: match.num,
+            team1: t1,
+            team2: t2,
+            score: formatScoreLabel(match),
+            winner,
+            played,
+          };
+        });
+
+      if (!roundMatches.length) return null;
+
+      return {
+        round,
+        label: ROUND_LABELS[round] || round,
+        matches: roundMatches,
+      };
+    }).filter(Boolean);
+  }
+
   async function fetchTournamentResults() {
     const response = await fetch(WC_JSON_URL);
     if (!response.ok) throw new Error(`Kunde inte hämta VM-data (${response.status})`);
@@ -390,6 +466,7 @@
     const filledSlots = top8.filter(Boolean).length;
     const eliminatedTeams = getEliminatedTeams(matches);
     const activeTeams = getActiveTeams(matches);
+    const knockoutBracket = buildKnockoutBracket(matches);
 
     return {
       ok: true,
@@ -399,6 +476,7 @@
       topScorerGoals: scorer.goals,
       eliminatedTeams,
       activeTeams,
+      knockoutBracket,
       phase,
       filledSlots,
       updatedAt: new Date().toISOString(),
@@ -411,6 +489,7 @@
     normalizeScorer,
     getEliminatedTeams,
     getActiveTeams,
+    buildKnockoutBracket,
     fetchTournamentResults,
   };
 });

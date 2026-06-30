@@ -110,7 +110,7 @@
           <button type="button" class="btn btn-primary" id="sync-now">Hämta senaste</button>
           <label class="sync-toggle">
             <input type="checkbox" id="auto-sync" checked>
-            Automatisk uppdatering var 5:e minut
+            Automatisk uppdatering var 2:a minut
           </label>
         </div>
 
@@ -140,6 +140,14 @@
         <div class="admin-actions">
           <button type="button" class="btn btn-ghost" id="reset-results">Återställ resultat</button>
         </div>
+
+        <div class="bracket-block">
+          <h3>Slutspelsträd</h3>
+          <p class="panel-desc">Hämtas automatiskt från samma källa som resultaten.</p>
+          <div id="knockout-bracket" class="knockout-bracket">
+            <p class="bracket-empty">Laddar slutspel…</p>
+          </div>
+        </div>
       </section>
     </main>
 
@@ -151,7 +159,7 @@
   <datalist id="team-list"></datalist>
   <datalist id="player-list"></datalist>
 
-  <script src="results-logic.js?v=8"></script>
-  <script src="app.js?v=8"></script>
+  <script src="results-logic.js?v=9"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>

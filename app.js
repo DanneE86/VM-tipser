@@ -99,9 +99,9 @@ const TEAM_ALIASES = {
 
 const POSITION_POINTS = [20, 10, 10, 5];
 
-const STORAGE_KEY = "vm-tipset-results-v2";
+const STORAGE_KEY = "vm-tipset-results-v3";
 const AUTO_SYNC_KEY = "vm-tipset-auto-sync";
-const SYNC_INTERVAL_MS = 5 * 60 * 1000;
+const SYNC_INTERVAL_MS = 2 * 60 * 1000;
 
 let syncTimer = null;
 let isSyncing = false;
@@ -140,6 +140,7 @@ function loadResults() {
       champion: data.champion || "",
       eliminatedTeams: data.eliminatedTeams || [],
       activeTeams: data.activeTeams || [],
+      knockoutBracket: data.knockoutBracket || [],
     };
   } catch {
     return defaultResults();
@@ -154,6 +155,7 @@ function defaultResults() {
     champion: "",
     eliminatedTeams: [],
     activeTeams: [],
+    knockoutBracket: [],
   };
 }
 
@@ -193,6 +195,7 @@ function applyFetchedResults(data) {
     champion: data.champion || current.champion || "",
     eliminatedTeams: Array.isArray(data.eliminatedTeams) ? data.eliminatedTeams : current.eliminatedTeams,
     activeTeams: Array.isArray(data.activeTeams) ? data.activeTeams : current.activeTeams,
+    knockoutBracket: Array.isArray(data.knockoutBracket) ? data.knockoutBracket : current.knockoutBracket,
     lastSyncedAt: data.updatedAt,
     phase: data.phase,
   };
@@ -477,6 +480,48 @@ function renderParticipantOverview(scored) {
   });
 }
 
+function renderKnockoutBracket(bracket) {
+  const container = document.getElementById("knockout-bracket");
+  if (!container) return;
+
+  if (!bracket?.length) {
+    container.innerHTML = `<p class="bracket-empty">Slutspelsmatcher visas här när de spelas.</p>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="bracket-grid">
+      ${bracket
+        .map(
+          (round) => `
+        <div class="bracket-round">
+          <h4 class="bracket-round-title">${round.label}</h4>
+          <div class="bracket-matches">
+            ${round.matches
+              .map((match) => {
+                const teamClass = (team, side) => {
+                  if (!match.played || !match.winner) return "";
+                  const isWinner = match.winner === team;
+                  return isWinner ? "bracket-team--winner" : "bracket-team--loser";
+                };
+                return `
+                  <div class="bracket-match${match.played ? " played" : ""}">
+                    <div class="bracket-team ${teamClass(match.team1, 1)}">${match.team1}</div>
+                    <div class="bracket-score">${match.score || "–"}</div>
+                    <div class="bracket-team ${teamClass(match.team2, 2)}">${match.team2}</div>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
 function formatPoints(points) {
   return `${points} p`;
 }
@@ -647,6 +692,8 @@ function render() {
   if (topScorer !== document.activeElement) topScorer.value = displayScorer(results.topScorer);
   if (topScorerGoals !== document.activeElement) topScorerGoals.value = results.topScorerGoals;
   if (champion !== document.activeElement) champion.value = results.champion;
+
+  renderKnockoutBracket(results.knockoutBracket);
 }
 
 function readFormResults() {
