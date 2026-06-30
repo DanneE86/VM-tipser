@@ -121,7 +121,13 @@ function normalizeTeam(value) {
 }
 
 function normalizeScorer(value) {
+  if (typeof VmResults === "undefined") return (value || "").trim();
   return VmResults.normalizeScorer(value);
+}
+
+function isLocalServer() {
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1";
 }
 
 function displayScorer(value) {
@@ -214,12 +220,16 @@ async function fetchLiveResults(force = false) {
   try {
     let data;
 
-    try {
-      const endpoint = force ? "/api/refresh" : "/api/results";
-      const response = await fetch(endpoint);
-      data = await response.json();
-      if (!response.ok || !data.ok) throw new Error(data.error || "API fel");
-    } catch {
+    if (isLocalServer()) {
+      try {
+        const endpoint = force ? "/api/refresh" : "/api/results";
+        const response = await fetch(endpoint);
+        data = await response.json();
+        if (!response.ok || !data.ok) throw new Error(data.error || "API fel");
+      } catch {
+        data = await VmResults.fetchTournamentResults();
+      }
+    } else {
       data = await VmResults.fetchTournamentResults();
     }
 
@@ -237,6 +247,7 @@ async function fetchLiveResults(force = false) {
     return data;
   } catch (error) {
     setSyncStatus("error", error.message || "Kunde inte hämta resultat");
+    render();
     return null;
   } finally {
     isSyncing = false;
@@ -438,9 +449,11 @@ function countTeamsRemaining(participant, eliminatedSet, activeSet) {
     if (normalized) teams.add(normalized);
   });
 
+  const hasLiveData = eliminatedSet.size > 0 || activeSet.size > 0;
   let remaining = 0;
   for (const team of teams) {
-    if (!eliminatedSet.has(team) && activeSet.has(team)) remaining++;
+    if (eliminatedSet.has(team)) continue;
+    if (!hasLiveData || activeSet.has(team)) remaining++;
   }
 
   return { total: teams.size, remaining };
@@ -750,8 +763,27 @@ function setupPublicLink() {
   link.textContent = publicUrl;
 }
 
-bindAdmin();
-setupAutoSync();
-setupPublicLink();
-render();
-fetchLiveResults(false);
+function initApp() {
+  if (typeof VmResults === "undefined") {
+    setSyncStatus("error", "Resultatlogik saknas — ladda om sidan");
+    return;
+  }
+
+  try {
+    bindAdmin();
+    setupAutoSync();
+    setupPublicLink();
+    render();
+    fetchLiveResults(false);
+  } catch (error) {
+    console.error(error);
+    setSyncStatus("error", error.message || "Kunde inte starta sidan");
+    render();
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initApp);
+} else {
+  initApp();
+}
